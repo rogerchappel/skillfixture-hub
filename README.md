@@ -54,9 +54,18 @@ This project never calls LLM APIs, installs skills, edits live agent hosts, or w
 ## Verification
 
 ```bash
-npm test
-npm run check
-npm run build
-npm run smoke
-bash scripts/validate.sh
+npm run release:check
 ```
+
+The release check runs:
+
+```bash
+npm run check
+npm test
+npm run smoke
+npm run package:smoke
+```
+
+`package:smoke` builds the TypeScript output and runs `npm pack --dry-run` so
+reviewers can confirm the CLI, activation fixture, example skill, docs,
+changelog, README, and license are included before a release.

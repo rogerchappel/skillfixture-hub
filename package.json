@@ -11,13 +11,17 @@
     "fixtures",
     "docs",
     "SKILL.md",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test dist/**/*.test.js",
     "smoke": "npm run build && node dist/src/cli.js validate fixtures/activation.json && node dist/src/cli.js summarize fixtures/activation.json --format markdown",
+    "package:smoke": "npm run build && npm pack --dry-run",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke",
     "validate": "bash scripts/validate.sh"
   },
   "keywords": [
@@ -28,6 +32,14 @@
     "testing"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerchappel/skillfixture-hub.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rogerchappel/skillfixture-hub/issues"
+  },
+  "homepage": "https://github.com/rogerchappel/skillfixture-hub#readme",
   "devDependencies": {
     "@types/node": "^20.14.0",
     "typescript": "^5.4.5"
