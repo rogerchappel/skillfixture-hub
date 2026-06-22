@@ -1,0 +1,35 @@
+{
+  "name": "skillfixture-hub",
+  "version": "0.1.0",
+  "description": "Local-first activation fixture toolkit for portable agent skills.",
+  "type": "module",
+  "bin": {
+    "skillfixture-hub": "./dist/src/cli.js"
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "docs",
+    "SKILL.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "smoke": "npm run build && node dist/src/cli.js validate fixtures/activation.json && node dist/src/cli.js summarize fixtures/activation.json --format markdown",
+    "validate": "bash scripts/validate.sh"
+  },
+  "keywords": [
+    "agent-skills",
+    "fixtures",
+    "activation",
+    "cli",
+    "testing"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  }
+}
