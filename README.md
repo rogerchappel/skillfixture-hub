@@ -66,6 +66,6 @@ npm run smoke
 npm run package:smoke
 ```
 
-`package:smoke` builds the TypeScript output and runs `npm pack --dry-run` so
-reviewers can confirm the CLI, activation fixture, example skill, docs,
-changelog, README, and license are included before a release.
+`package:smoke` builds the TypeScript output, runs `npm pack --dry-run`, and
+fails if the packed artifact is missing the CLI, library module, activation
+fixture, skill file, release notes, README, or license.
