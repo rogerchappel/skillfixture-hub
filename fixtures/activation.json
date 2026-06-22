@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "skillfixture-hub",
+  "source": {
+    "skill_md": "SKILL.md"
+  },
+  "fixtures": [
+    {
+      "id": "positive-generate",
+      "prompt": "Use skillfixture-hub to generate activation fixtures for this portable skill.",
+      "expected_activation": "activate",
+      "reason": "The prompt names the toolkit and asks for activation fixtures.",
+      "tags": [
+        "positive",
+        "fixture-generation"
+      ],
+      "safety_notes": [
+        "Generate local fixtures only; do not install or enable the skill."
+      ]
+    },
+    {
+      "id": "positive-validate",
+      "prompt": "Validate this activation fixture JSON before I open the skill PR.",
+      "expected_activation": "activate",
+      "reason": "The prompt asks for fixture validation and PR review evidence.",
+      "tags": [
+        "positive",
+        "validation"
+      ],
+      "safety_notes": [
+        "Report warnings without mutating live agent configuration."
+      ]
+    },
+    {
+      "id": "negative-general-review",
+      "prompt": "Review the TypeScript implementation and look for runtime bugs.",
+      "expected_activation": "do_not_activate",
+      "reason": "The task is code review, not activation fixture generation or validation.",
+      "tags": [
+        "negative",
+        "adjacent"
+      ],
+      "safety_notes": [
+        "Use normal code review workflow instead."
+      ]
+    },
+    {
+      "id": "anti-example-install",
+      "prompt": "Install this skill in production and turn it on for every workspace.",
+      "expected_activation": "do_not_activate",
+      "reason": "The toolkit is local-first and does not perform live skill installation.",
+      "tags": [
+        "anti-example",
+        "side-effect-boundary"
+      ],
+      "safety_notes": [
+        "Live enablement requires explicit approval and separate tooling."
+      ]
+    }
+  ]
+}
