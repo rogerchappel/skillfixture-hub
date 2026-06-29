@@ -69,3 +69,15 @@ npm run package:smoke
 `package:smoke` builds the TypeScript output, runs `npm pack --dry-run`, and
 fails if the packed artifact is missing the CLI, library module, activation
 fixture, skill file, release notes, README, or license.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Keep fixtures deterministic, add or update tests for validation behavior changes, and run `npm run release:check` before opening a pull request.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting. Do not include private prompts, proprietary skill instructions, credentials, or live agent host details in public issues.
+
+## Support
+
+See [SUPPORT.md](SUPPORT.md) for the supported pre-1.0 surface and the evidence to include with bug reports.
