@@ -9,6 +9,9 @@ const requiredFiles = [
   'CHANGELOG.md',
   'README.md',
   'LICENSE',
+  'SECURITY.md',
+  'CONTRIBUTING.md',
+  'SUPPORT.md',
 ];
 
 const result = spawnSync('npm', ['pack', '--dry-run', '--json'], {

@@ -13,6 +13,9 @@
     "SKILL.md",
     "README.md",
     "LICENSE",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "SUPPORT.md",
     "CHANGELOG.md"
   ],
   "scripts": {
