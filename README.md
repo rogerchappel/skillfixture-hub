@@ -41,6 +41,11 @@ node dist/src/cli.js init fixtures/example-skill --out tmp/generated-activation.
 }
 ```
 
+`validate` treats parsed JSON as untrusted input. Malformed top-level values, fixture
+objects, and field types produce a deterministic JSON validation result and a
+nonzero exit status. `render` and `summarize` reject malformed fixture data with a
+clear error directing you to `validate` for field-level details.
+
 ## Safety Notes
 
 This project never calls LLM APIs, installs skills, edits live agent hosts, or writes to external services. Outputs are deterministic local files intended for review.

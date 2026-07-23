@@ -40,9 +40,9 @@ export interface ValidationResult {
   };
 }
 
-export async function loadFixtureFile(path: string): Promise<ActivationFixtureFile> {
+export async function loadFixtureFile(path: string): Promise<unknown> {
   const raw = await readFile(path, "utf8");
-  return JSON.parse(raw) as ActivationFixtureFile;
+  return JSON.parse(raw) as unknown;
 }
 
 export async function writeFixtureFile(path: string, fixtureFile: ActivationFixtureFile): Promise<void> {
@@ -100,50 +100,80 @@ export async function initFixtures(skillDir: string, outPath: string): Promise<A
   return fixtureFile;
 }
 
-export function validateFixtureFile(fixtureFile: ActivationFixtureFile): ValidationResult {
+export function validateFixtureFile(input: unknown): ValidationResult {
   const issues: ValidationIssue[] = [];
+  if (!isRecord(input)) {
+    return validationResult(
+      [error("top_level", "Fixture file must be a JSON object.")],
+      0,
+      0,
+      0
+    );
+  }
+  const fixtureFile = input;
   if (fixtureFile.schema_version !== "1.0") {
     issues.push(error("schema_version", "schema_version must be 1.0."));
   }
-  if (!fixtureFile.skill_name || typeof fixtureFile.skill_name !== "string") {
-    issues.push(error("skill_name", "skill_name is required."));
+  if (typeof fixtureFile.skill_name !== "string" || fixtureFile.skill_name.trim().length === 0) {
+    issues.push(error("skill_name", "skill_name must be a non-empty string."));
+  }
+  if (!isRecord(fixtureFile.source)) {
+    issues.push(error("source", "source must be a JSON object."));
+  } else {
+    for (const field of ["skill_md", "skill_yaml"] as const) {
+      const value = fixtureFile.source[field];
+      if (value !== undefined && typeof value !== "string") {
+        issues.push(error(`source_${field}`, `source.${field} must be a string when provided.`));
+      }
+    }
   }
   if (!Array.isArray(fixtureFile.fixtures) || fixtureFile.fixtures.length === 0) {
-    issues.push(error("fixtures", "At least one fixture is required."));
+    issues.push(error("fixtures", "fixtures must be a non-empty array."));
   }
 
   const seen = new Set<string>();
   let activate = 0;
   let doNotActivate = 0;
-  for (const fixture of fixtureFile.fixtures ?? []) {
-    if (!fixture.id) {
-      issues.push(error("fixture_id", "Fixture id is required."));
-    } else if (seen.has(fixture.id)) {
-      issues.push(error("duplicate_id", `Duplicate fixture id '${fixture.id}'.`, fixture.id));
-    } else {
-      seen.add(fixture.id);
+  const fixtures = Array.isArray(fixtureFile.fixtures) ? fixtureFile.fixtures : [];
+  for (const [index, value] of fixtures.entries()) {
+    if (!isRecord(value)) {
+      issues.push(error("fixture", `Fixture at index ${index} must be a JSON object.`));
+      continue;
     }
-    if (!fixture.prompt || fixture.prompt.trim().length < 10) {
-      issues.push(error("prompt", "Fixture prompt should be at least 10 characters.", fixture.id));
+    const fixture = value;
+    const fixtureId = typeof fixture.id === "string" ? fixture.id : undefined;
+    if (!fixtureId || fixtureId.trim().length === 0) {
+      issues.push(error("fixture_id", "Fixture id must be a non-empty string."));
+    } else if (seen.has(fixtureId)) {
+      issues.push(error("duplicate_id", `Duplicate fixture id '${fixtureId}'.`, fixtureId));
+    } else {
+      seen.add(fixtureId);
+    }
+    if (typeof fixture.prompt !== "string" || fixture.prompt.trim().length < 10) {
+      issues.push(error("prompt", "Fixture prompt must be a string of at least 10 characters.", fixtureId));
     }
     if (fixture.expected_activation === "activate") {
       activate += 1;
     } else if (fixture.expected_activation === "do_not_activate") {
       doNotActivate += 1;
     } else {
-      issues.push(error("expected_activation", "expected_activation must be activate or do_not_activate.", fixture.id));
+      issues.push(error("expected_activation", "expected_activation must be activate or do_not_activate.", fixtureId));
     }
-    if (!fixture.reason || fixture.reason.trim().length < 12) {
-      issues.push(error("reason", "Fixture reason should explain the activation decision.", fixture.id));
+    if (typeof fixture.reason !== "string" || fixture.reason.trim().length < 12) {
+      issues.push(error("reason", "Fixture reason must be a string of at least 12 characters.", fixtureId));
     }
-    if (!Array.isArray(fixture.tags) || fixture.tags.length === 0) {
-      issues.push(warn("tags", "Add tags so reviewers can group activation cases.", fixture.id));
+    if (!isStringArray(fixture.tags)) {
+      issues.push(error("tags", "Fixture tags must be an array of strings.", fixtureId));
+    } else if (fixture.tags.length === 0) {
+      issues.push(warn("tags", "Add tags so reviewers can group activation cases.", fixtureId));
     }
-    if (!Array.isArray(fixture.safety_notes) || fixture.safety_notes.length === 0) {
-      issues.push(warn("safety_notes", "Add safety notes for activation boundaries.", fixture.id));
+    if (!isStringArray(fixture.safety_notes)) {
+      issues.push(error("safety_notes", "Fixture safety_notes must be an array of strings.", fixtureId));
+    } else if (fixture.safety_notes.length === 0) {
+      issues.push(warn("safety_notes", "Add safety notes for activation boundaries.", fixtureId));
     }
-    if (fixture.prompt && looksAmbiguous(fixture.prompt) && fixture.expected_activation === "activate") {
-      issues.push(warn("ambiguous_activation", "Positive fixture prompt may be too broad or ambiguous.", fixture.id));
+    if (typeof fixture.prompt === "string" && looksAmbiguous(fixture.prompt) && fixture.expected_activation === "activate") {
+      issues.push(warn("ambiguous_activation", "Positive fixture prompt may be too broad or ambiguous.", fixtureId));
     }
   }
 
@@ -153,25 +183,16 @@ export function validateFixtureFile(fixtureFile: ActivationFixtureFile): Validat
   if (doNotActivate === 0) {
     issues.push(error("missing_negative", "At least one do_not_activate fixture is required."));
   }
-  if (!fixtureFile.fixtures?.some((fixture) => fixture.tags?.includes("anti-example"))) {
+  if (!fixtures.some((fixture) => isRecord(fixture) && isStringArray(fixture.tags) && fixture.tags.includes("anti-example"))) {
     issues.push(warn("missing_anti_example", "Add at least one anti-example fixture for unsafe or out-of-scope prompts."));
   }
 
-  const errors = issues.filter((issue) => issue.level === "error");
-  const warnings = issues.filter((issue) => issue.level === "warning");
-  return {
-    ok: errors.length === 0,
-    errors,
-    warnings,
-    counts: {
-      activate,
-      do_not_activate: doNotActivate,
-      total: fixtureFile.fixtures?.length ?? 0
-    }
-  };
+  return validationResult(issues, activate, doNotActivate, fixtures.length);
 }
 
-export function renderMarkdownSummary(fixtureFile: ActivationFixtureFile, validation = validateFixtureFile(fixtureFile)): string {
+export function renderMarkdownSummary(input: unknown): string {
+  const fixtureFile = requireValidFixtureFile(input);
+  const validation = validateFixtureFile(fixtureFile);
   const rows = fixtureFile.fixtures.map((fixture) => {
     const tags = fixture.tags.join(", ");
     return `| ${escapeCell(fixture.id)} | ${fixture.expected_activation} | ${escapeCell(fixture.reason)} | ${escapeCell(tags)} |`;
@@ -199,7 +220,8 @@ export function renderMarkdownSummary(fixtureFile: ActivationFixtureFile, valida
   ].filter((line, index, lines) => !(line === "" && lines[index - 1] === "")).join("\n");
 }
 
-export function summarizeJson(fixtureFile: ActivationFixtureFile): object {
+export function summarizeJson(input: unknown): object {
+  const fixtureFile = requireValidFixtureFile(input);
   const validation = validateFixtureFile(fixtureFile);
   return {
     skill_name: fixtureFile.skill_name,
@@ -226,6 +248,37 @@ function extractTriggerPhrases(skillText: string): string[] {
 function looksAmbiguous(prompt: string): boolean {
   const lower = prompt.toLowerCase();
   return [/\bhelp\b/, /\bfix\b/, /\breview\b/, /\bhandle this\b/, /\bdo the task\b/].some((pattern) => pattern.test(lower));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function validationResult(
+  issues: ValidationIssue[],
+  activate: number,
+  doNotActivate: number,
+  total: number
+): ValidationResult {
+  const errors = issues.filter((issue) => issue.level === "error");
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings: issues.filter((issue) => issue.level === "warning"),
+    counts: { activate, do_not_activate: doNotActivate, total }
+  };
+}
+
+function requireValidFixtureFile(input: unknown): ActivationFixtureFile {
+  const validation = validateFixtureFile(input);
+  if (!validation.ok) {
+    throw new Error(`Invalid fixture file: ${validation.errors.length} validation error(s). Run validate for details.`);
+  }
+  return input as ActivationFixtureFile;
 }
 
 function error(code: string, message: string, fixture_id?: string): ValidationIssue {

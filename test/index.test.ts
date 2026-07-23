@@ -1,5 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   renderMarkdownSummary,
   summarizeJson,
@@ -83,4 +87,104 @@ test("summary renderers include status and issue counts", () => {
   assert.match(markdown, /\| positive-primary \| activate \|/);
   assert.equal(summary.ok, true);
   assert.equal(summary.issue_count, 1);
+});
+
+test("validateFixtureFile reports non-object top-level values", () => {
+  for (const input of [null, 42, "fixture", []]) {
+    const result = validateFixtureFile(input);
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.errors.map((issue) => issue.code), ["top_level"]);
+  }
+});
+
+test("validateFixtureFile reports malformed fixture field types without throwing", () => {
+  const result = validateFixtureFile({
+    schema_version: "1.0",
+    skill_name: "example-skill",
+    source: { skill_md: 3 },
+    fixtures: [
+      {
+        id: 7,
+        prompt: 42,
+        expected_activation: false,
+        reason: { text: "bad" },
+        tags: "bad",
+        safety_notes: null
+      },
+      null,
+      {
+        id: "arrays",
+        prompt: ["not", "text"],
+        expected_activation: "activate",
+        reason: false,
+        tags: ["valid", 1],
+        safety_notes: {}
+      }
+    ]
+  });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(
+    result.errors.map((issue) => issue.code),
+    [
+      "source_skill_md",
+      "fixture_id",
+      "prompt",
+      "expected_activation",
+      "reason",
+      "tags",
+      "safety_notes",
+      "fixture",
+      "prompt",
+      "reason",
+      "tags",
+      "safety_notes",
+      "missing_negative"
+    ]
+  );
+});
+
+test("summary renderers reject invalid values with a clear validation error", () => {
+  assert.throws(() => renderMarkdownSummary({ fixtures: [] }), /Invalid fixture file: \d+ validation error/);
+  assert.throws(() => summarizeJson(null), /Invalid fixture file: 1 validation error/);
+});
+
+test("validate CLI emits structured JSON and exits nonzero for malformed schema data", () => {
+  const directory = mkdtempSync(join(tmpdir(), "skillfixture-hub-test-"));
+  const fixturePath = join(directory, "malformed.json");
+  writeFileSync(fixturePath, JSON.stringify({
+    schema_version: "1.0",
+    skill_name: "example",
+    source: {},
+    fixtures: [{
+      id: "bad",
+      prompt: 42,
+      expected_activation: "activate",
+      reason: false,
+      tags: "bad",
+      safety_notes: null
+    }]
+  }));
+
+  try {
+    const validation = spawnSync(process.execPath, ["dist/src/cli.js", "validate", fixturePath], {
+      encoding: "utf8"
+    });
+    assert.equal(validation.status, 1);
+    const result = JSON.parse(validation.stdout) as { ok: boolean; errors: Array<{ code: string }> };
+    assert.equal(result.ok, false);
+    assert.deepEqual(
+      result.errors.slice(0, 4).map((issue) => issue.code),
+      ["prompt", "reason", "tags", "safety_notes"]
+    );
+    assert.doesNotMatch(validation.stderr, /TypeError/);
+
+    const summary = spawnSync(process.execPath, ["dist/src/cli.js", "summarize", fixturePath], {
+      encoding: "utf8"
+    });
+    assert.equal(summary.status, 1);
+    assert.match(summary.stderr, /Invalid fixture file.*Run validate for details/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
