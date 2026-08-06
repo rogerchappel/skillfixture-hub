@@ -7,9 +7,22 @@
 ```bash
 npm install
 npm run build
-node dist/src/cli.js validate fixtures/activation.json
-node dist/src/cli.js summarize fixtures/activation.json --format markdown
-node dist/src/cli.js init fixtures/example-skill --out tmp/generated-activation.json
+node dist/cli.js validate fixtures/activation.json
+node dist/cli.js summarize fixtures/activation.json --format markdown
+node dist/cli.js init fixtures/example-skill --out tmp/generated-activation.json
+```
+
+Install the package to use either the CLI or its typed ESM library entrypoint:
+
+```bash
+npm install skillfixture-hub
+npx skillfixture-hub validate fixtures/activation.json
+```
+
+```ts
+import { validateFixtureFile } from "skillfixture-hub";
+
+const result = validateFixtureFile(fixtureData);
 ```
 
 ## Commands
@@ -71,9 +84,9 @@ npm run smoke
 npm run package:smoke
 ```
 
-`package:smoke` builds the TypeScript output, runs `npm pack --dry-run`, and
-fails if the packed artifact is missing the CLI, library module, activation
-fixture, skill file, release notes, README, or license.
+`package:smoke` builds and installs the actual `npm pack` tarball in an isolated
+consumer, verifies a root library import and the installed CLI, and fails if the
+artifact is missing required release files or contains compiled test output.
 
 ## Contributing
 
