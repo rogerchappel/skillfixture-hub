@@ -1,6 +1,8 @@
 # Support
 
-`skillfixture-hub` is an early local-first CLI. The supported surface is the current `main` branch, the documented CLI commands, and the exported validation and rendering helpers.
+`skillfixture-hub` is an early local-first CLI and ESM library. The supported
+surface is the documented `skillfixture-hub` CLI commands and the typed helpers
+exported from the package root, including validation and rendering helpers.
 
 ## Before Filing an Issue
 

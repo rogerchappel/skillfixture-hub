@@ -167,7 +167,7 @@ test("validate CLI emits structured JSON and exits nonzero for malformed schema 
   }));
 
   try {
-    const validation = spawnSync(process.execPath, ["dist/src/cli.js", "validate", fixturePath], {
+    const validation = spawnSync(process.execPath, ["dist-test/src/cli.js", "validate", fixturePath], {
       encoding: "utf8"
     });
     assert.equal(validation.status, 1);
@@ -179,7 +179,7 @@ test("validate CLI emits structured JSON and exits nonzero for malformed schema 
     );
     assert.doesNotMatch(validation.stderr, /TypeError/);
 
-    const summary = spawnSync(process.execPath, ["dist/src/cli.js", "summarize", fixturePath], {
+    const summary = spawnSync(process.execPath, ["dist-test/src/cli.js", "summarize", fixturePath], {
       encoding: "utf8"
     });
     assert.equal(summary.status, 1);
