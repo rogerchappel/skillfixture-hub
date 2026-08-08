@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Discover compiled tests consistently across supported Node.js versions and verify release checks on Node.js 20 and 24.
 - Publish explicit ESM and TypeScript declaration entrypoints for library consumers.
 - Exclude compiled tests from the package and verify the installed tarball's root import and CLI.
 - Add release-readiness checks for CI and package contents.

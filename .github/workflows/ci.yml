@@ -7,14 +7,18 @@ on:
 
 jobs:
   release-check:
+    strategy:
+      matrix:
+        node-version: [20, 24]
     runs-on: ubuntu-latest
+    name: Release check (Node ${{ matrix.node-version }})
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - name: Install dependencies
         run: npm ci

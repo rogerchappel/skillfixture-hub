@@ -84,6 +84,10 @@ npm run smoke
 npm run package:smoke
 ```
 
+CI runs the complete release check on Node.js 20 and 24. The test command
+discovers compiled `*.test.js` files without relying on shell glob expansion and
+fails if compilation produces no test files.
+
 `package:smoke` builds and installs the actual `npm pack` tarball in an isolated
 consumer, verifies a root library import and the installed CLI, and fails if the
 artifact is missing required release files or contains compiled test output.
