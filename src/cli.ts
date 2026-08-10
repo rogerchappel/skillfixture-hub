@@ -16,16 +16,22 @@ interface CliOptions {
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
-  const { positionals, options } = parseArgs(rest);
 
   if (!command || command === "help" || command === "--help") {
     printHelp();
     return 0;
   }
 
+  if (!(["init", "validate", "render", "summarize"] as string[]).includes(command)) {
+    throw new UsageError(`Unknown command '${command}'.`);
+  }
+
+  const { positionals, options } = parseArgs(rest);
+  validateInvocation(command, positionals, options);
+
   if (command === "init") {
     const skillDir = positionals[0];
-    if (!skillDir) throw new Error("init requires a skill directory.");
+    if (!skillDir) throw new UsageError("init requires a skill directory.");
     const out = options.out ?? "fixtures/activation.json";
     const fixtureFile = await initFixtures(skillDir, out);
     console.log(`Created ${out} with ${fixtureFile.fixtures.length} fixtures.`);
@@ -59,7 +65,7 @@ async function main(argv: string[]): Promise<number> {
     return 0;
   }
 
-  throw new Error(`Unknown command '${command}'.`);
+  throw new UsageError(`Unknown command '${command}'.`);
 }
 
 function parseArgs(args: string[]): { positionals: string[]; options: CliOptions } {
@@ -68,17 +74,39 @@ function parseArgs(args: string[]): { positionals: string[]; options: CliOptions
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === "--out") {
-      options.out = required(args[++i], "--out requires a path.");
+      if (options.out !== undefined) throw new UsageError("--out may only be specified once.");
+      options.out = requiredOptionValue(args[++i], "--out requires a path.");
     } else if (arg === "--format") {
-      const format = required(args[++i], "--format requires json or markdown.");
-      if (format !== "json" && format !== "markdown") throw new Error("--format must be json or markdown.");
+      if (options.format !== undefined) throw new UsageError("--format may only be specified once.");
+      const format = requiredOptionValue(args[++i], "--format requires json or markdown.");
+      if (format !== "json" && format !== "markdown") throw new UsageError("--format must be json or markdown.");
       options.format = format;
+    } else if (arg.startsWith("-")) {
+      throw new UsageError(`Unknown option '${arg}'.`);
     } else {
       positionals.push(arg);
     }
   }
   return { positionals, options };
 }
+
+function validateInvocation(command: string, positionals: string[], options: CliOptions): void {
+  const allowedOptions = command === "validate" ? [] : command === "init" ? ["out"] : ["out", "format"];
+  for (const option of Object.keys(options)) {
+    if (!allowedOptions.includes(option)) throw new UsageError(`--${option} is not valid for ${command}.`);
+  }
+  if (positionals.length === 0) {
+    throw new UsageError(`${command} requires a ${command === "init" ? "skill directory" : "fixture JSON file"}.`);
+  }
+  if (positionals.length > 1) throw new UsageError(`${command} accepts exactly one operand.`);
+}
+
+function requiredOptionValue(value: string | undefined, message: string): string {
+  if (!value || value.startsWith("-")) throw new UsageError(message);
+  return value;
+}
+
+class UsageError extends Error {}
 
 function required(value: string | undefined, message: string): string {
   if (!value) throw new Error(message);
@@ -99,6 +127,7 @@ Usage:
 main(process.argv.slice(2)).then((code) => {
   process.exitCode = code;
 }).catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(error instanceof UsageError ? `Usage error: ${message}` : message);
   process.exitCode = 1;
 });

@@ -188,3 +188,24 @@ test("validate CLI emits structured JSON and exits nonzero for malformed schema 
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("CLI rejects unknown options, duplicate options, and extra operands", () => {
+  const cli = (args: string[]) => spawnSync(process.execPath, ["dist-test/src/cli.js", ...args], {
+    encoding: "utf8"
+  });
+  const cases = [
+    [["validate", "fixtures/activation.json", "--bogus"], /Unknown option '--bogus'/],
+    [["validate", "fixtures/activation.json", "extra.json"], /accepts exactly one operand/],
+    [["init", "fixtures/example-skill", "extra", "--out", "tmp/out.json"], /accepts exactly one operand/],
+    [["render", "fixtures/activation.json", "--format", "json", "--format", "markdown"], /--format may only be specified once/],
+    [["summarize", "fixtures/activation.json", "--out", "a", "--out", "b"], /--out may only be specified once/],
+    [["validate", "fixtures/activation.json", "--out", "result.json"], /--out is not valid for validate/]
+  ] as const;
+
+  for (const [args, expected] of cases) {
+    const result = cli([...args]);
+    assert.equal(result.status, 1, args.join(" "));
+    assert.match(result.stderr, /^Usage error:/);
+    assert.match(result.stderr, expected);
+  }
+});
