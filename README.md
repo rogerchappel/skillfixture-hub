@@ -54,7 +54,8 @@ const result = validateFixtureFile(fixtureData);
 }
 ```
 
-`validate` treats parsed JSON as untrusted input. Malformed top-level values, fixture
+Commands reject unknown or duplicate options and extra operands with a nonzero
+usage error. `validate` treats parsed JSON as untrusted input. Malformed top-level values, fixture
 objects, and field types produce a deterministic JSON validation result and a
 nonzero exit status. `render` and `summarize` reject malformed fixture data with a
 clear error directing you to `validate` for field-level details.
@@ -81,10 +82,13 @@ The release check runs:
 npm run check
 npm test
 npm run smoke
+npm run validate
 npm run package:smoke
 ```
 
-CI runs the complete release check on Node.js 20 and 24. The test command
+The release check invokes `npm run validate`, including its generated-fixture CLI
+smoke, so the built CLI path cannot drift unnoticed. CI runs the complete release
+check on Node.js 20 and 24. The test command
 discovers compiled `*.test.js` files without relying on shell glob expansion and
 fails if compilation produces no test files.
 
