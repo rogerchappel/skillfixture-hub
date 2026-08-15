@@ -33,6 +33,7 @@
     "test": "npm run test:build && node scripts/run-tests.mjs",
     "smoke": "npm run build && node dist/cli.js validate fixtures/activation.json && node dist/cli.js summarize fixtures/activation.json --format markdown",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
+    "release:tag": "node scripts/verify-release-tag.mjs",
     "release:check": "npm run validate && npm run package:smoke",
     "validate": "bash scripts/validate.sh",
     "lint": "npm run check"

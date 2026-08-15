@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -48,6 +48,9 @@ if (missingFiles.length > 0 || testArtifacts.length > 0) {
 
 const consumer = mkdtempSync(join(tmpdir(), 'skillfixture-hub-consumer-'));
 const tarball = resolve(pack.filename);
+const outputDirectory = process.env.PACKAGE_SMOKE_OUTPUT_DIR
+  ? resolve(process.env.PACKAGE_SMOKE_OUTPUT_DIR)
+  : undefined;
 
 try {
   const install = spawnSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], {
@@ -80,6 +83,12 @@ try {
   }
 
   console.log(`Package smoke passed for ${pack.filename} (${pack.files.length} files): root import and CLI verified.`);
+  if (outputDirectory) {
+    mkdirSync(outputDirectory, { recursive: true });
+    const artifact = join(outputDirectory, pack.filename);
+    renameSync(tarball, artifact);
+    console.log(`Verified package artifact retained at ${artifact}.`);
+  }
 } finally {
   rmSync(consumer, { recursive: true, force: true });
   rmSync(tarball, { force: true });
