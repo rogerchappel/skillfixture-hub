@@ -24,3 +24,12 @@ jobs:
         run: npm ci
       - name: Run release check
         run: npm run release:check
+        env:
+          PACKAGE_SMOKE_OUTPUT_DIR: artifacts
+      - name: Upload verified package artifact
+        if: matrix.node-version == 24
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: artifacts/*.tgz
+          if-no-files-found: error
