@@ -12,7 +12,9 @@ node dist/cli.js summarize fixtures/activation.json --format markdown
 node dist/cli.js init fixtures/example-skill --out tmp/generated-activation.json
 ```
 
-Install the package to use either the CLI or its typed ESM library entrypoint:
+The package is not currently published to the npm registry. Until the first
+release, clone this repository and use the local build shown above. After a
+release is published, the CLI and typed ESM entrypoint will be installable with:
 
 ```bash
 npm install skillfixture-hub
@@ -99,6 +101,21 @@ artifact is missing required release files or contains compiled test output.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Keep fixtures deterministic, add or update tests for validation behavior changes, and run `npm run release:check` before opening a pull request.
+
+## Releasing
+
+Publishing is restricted to the `Release` GitHub Actions workflow. Maintainers
+must update `package.json` and `package-lock.json` to the intended version, run
+`npm run release:check`, and push a tag named exactly `v<package-version>` (for
+example, `v0.1.0`). The workflow repeats the full release check, verifies the tag
+against `package.json`, and publishes the exact smoke-tested tarball using npm
+trusted publishing with provenance. The protected `npm` GitHub environment and
+the npm package's trusted publisher configuration must authorize this repository
+and workflow; no long-lived npm token is used.
+
+Ordinary pushes and pull requests cannot invoke the publishing workflow. CI does
+retain a non-publishing `npm-package` artifact from Node.js 24 so the candidate
+tarball can be reviewed before a version tag is created.
 
 ## Security
 

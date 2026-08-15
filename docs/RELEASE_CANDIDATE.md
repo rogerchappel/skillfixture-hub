@@ -13,11 +13,12 @@ Initial public build with:
 
 ## Verification Checklist
 
-- `npm test`
-- `npm run check`
-- `npm run build`
-- `npm run smoke`
-- `bash scripts/validate.sh`
+- `npm run release:check`
+- `npm run release:tag -- v0.1.0`
+
+The npm package is not yet published. CI creates a non-publishing, smoke-tested
+tarball artifact for review. Publishing requires an exact version tag and the
+protected `npm` GitHub environment; see the release procedure in `README.md`.
 
 ## Verification Results
 
