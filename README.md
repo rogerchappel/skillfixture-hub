@@ -60,6 +60,12 @@ objects, and field types produce a deterministic JSON validation result and a
 nonzero exit status. `render` and `summarize` reject malformed fixture data with a
 clear error directing you to `validate` for field-level details.
 
+`init` recognizes trigger lines beginning with `Use when`, `When to use`, or
+`Trigger` and removes that label plus common agent-subject wording before placing
+the prose after `Use <skill name> to`. Fixture `skill_name` values must be
+non-empty single-line text without control characters, so rendered Markdown
+metadata cannot create additional document structure.
+
 ## Safety Notes
 
 This project never calls LLM APIs, installs skills, edits live agent hosts, or writes to external services. Outputs are deterministic local files intended for review.

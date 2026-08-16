@@ -116,6 +116,8 @@ export function validateFixtureFile(input: unknown): ValidationResult {
   }
   if (typeof fixtureFile.skill_name !== "string" || fixtureFile.skill_name.trim().length === 0) {
     issues.push(error("skill_name", "skill_name must be a non-empty string."));
+  } else if (/\p{Cc}/u.test(fixtureFile.skill_name)) {
+    issues.push(error("skill_name", "skill_name must not contain control characters or line breaks."));
   }
   if (!isRecord(fixtureFile.source)) {
     issues.push(error("source", "source must be a JSON object."));
@@ -242,7 +244,14 @@ function extractSkillName(skillText: string, fallback: string): string {
 function extractTriggerPhrases(skillText: string): string[] {
   const triggerLine = skillText.split(/\r?\n/).find((line) => /use when|when to use|trigger/i.test(line));
   if (!triggerLine) return [];
-  return [triggerLine.replace(/^[-*\s#:]*/, "").trim().replace(/\.$/, "")];
+  const prose = triggerLine
+    .replace(/^[-*\s#:]*/, "")
+    .replace(/^(?:use when|when to use|triggers?)\s*:?[\s-]*/i, "")
+    .replace(/^(?:an?\s+)?agent\s+needs\s+to\s+/i, "")
+    .replace(/^you\s+need\s+to\s+/i, "")
+    .trim()
+    .replace(/[.!?]+$/, "");
+  return prose ? [prose] : [];
 }
 
 function looksAmbiguous(prompt: string): boolean {

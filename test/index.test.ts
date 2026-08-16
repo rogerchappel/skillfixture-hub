@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  initFixtures,
   renderMarkdownSummary,
   summarizeJson,
   validateFixtureFile,
@@ -52,6 +53,36 @@ test("validateFixtureFile accepts balanced activation fixtures", () => {
   assert.equal(result.counts.activate, 1);
   assert.equal(result.counts.do_not_activate, 2);
   assert.equal(result.counts.total, 3);
+});
+
+test("initFixtures turns trigger prose into a grammatical primary prompt", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "skillfixture-hub-init-"));
+  const skillDirectory = join(directory, "example-skill");
+  const outputPath = join(directory, "activation.json");
+  mkdirSync(skillDirectory, { recursive: true });
+  writeFileSync(join(skillDirectory, "SKILL.md"), [
+    "# Example Research Skill",
+    "",
+    "Use when an agent needs to turn a local research brief into source-backed notes."
+  ].join("\n"));
+
+  try {
+    const fixtureFile = await initFixtures(skillDirectory, outputPath);
+    assert.equal(fixtureFile.fixtures[0].prompt, "Use Example Research Skill to turn a local research brief into source-backed notes.");
+    assert.doesNotMatch(fixtureFile.fixtures[0].prompt, /to (?:Use when|When to use|Trigger)/i);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("validateFixtureFile rejects control characters in skill_name", () => {
+  for (const skillName of ["Demo\n## Injected", "Demo\rInjected", "Demo\tInjected"]) {
+    const input = { ...validFixture, skill_name: skillName };
+    const result = validateFixtureFile(input);
+    assert.equal(result.ok, false);
+    assert.equal(result.errors.some((issue) => issue.code === "skill_name"), true);
+    assert.throws(() => renderMarkdownSummary(input), /Invalid fixture file/);
+  }
 });
 
 test("validateFixtureFile flags duplicate fixture ids", () => {
@@ -184,6 +215,30 @@ test("validate CLI emits structured JSON and exits nonzero for malformed schema 
     });
     assert.equal(summary.status, 1);
     assert.match(summary.stderr, /Invalid fixture file.*Run validate for details/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("compiled CLI normalizes triggers and rejects multiline Markdown metadata", () => {
+  const directory = mkdtempSync(join(tmpdir(), "skillfixture-hub-cli-metadata-"));
+  const skillDirectory = join(directory, "demo");
+  const generatedPath = join(directory, "generated.json");
+  const malformedPath = join(directory, "malformed.json");
+  mkdirSync(skillDirectory, { recursive: true });
+  writeFileSync(join(skillDirectory, "SKILL.md"), "# Demo Skill\n\nWhen to use: You need to prepare fixture evidence.\n");
+  writeFileSync(malformedPath, JSON.stringify({ ...validFixture, skill_name: "Demo\n## Injected" }));
+
+  try {
+    const init = spawnSync(process.execPath, ["dist-test/src/cli.js", "init", skillDirectory, "--out", generatedPath], { encoding: "utf8" });
+    assert.equal(init.status, 0, init.stderr);
+    const generated = JSON.parse(readFileSync(generatedPath, "utf8")) as ActivationFixtureFile;
+    assert.equal(generated.fixtures[0].prompt, "Use Demo Skill to prepare fixture evidence.");
+
+    const render = spawnSync(process.execPath, ["dist-test/src/cli.js", "render", malformedPath, "--format", "markdown"], { encoding: "utf8" });
+    assert.equal(render.status, 1);
+    assert.match(render.stderr, /Invalid fixture file/);
+    assert.doesNotMatch(render.stdout, /## Injected/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
