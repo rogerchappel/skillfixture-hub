@@ -1,5 +1,7 @@
 # skillfixture-hub
 
+[![CI](https://github.com/rogerchappel/skillfixture-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/rogerchappel/skillfixture-hub/actions/workflows/ci.yml)
+
 `skillfixture-hub` is a local-first activation fixture toolkit for portable agent skills. It helps skill authors create positive, negative, and anti-example prompts so activation behavior can be reviewed before a skill is packaged or shipped.
 
 ## Quickstart
