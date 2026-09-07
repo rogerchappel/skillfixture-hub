@@ -62,9 +62,14 @@ objects, and field types produce a deterministic JSON validation result and a
 nonzero exit status. `render` and `summarize` reject malformed fixture data with a
 clear error directing you to `validate` for field-level details.
 
-`init` recognizes trigger lines beginning with `Use when`, `When to use`, or
-`Trigger` and removes that label plus common agent-subject wording before placing
-the prose after `Use <skill name> to`. Fixture `skill_name` values must be
+`init` recognizes inline trigger lines beginning with `Use when`, `When to use`,
+or `Trigger`. Those labels may also be Markdown headings on their own line; in
+that form, `init` uses the next non-empty activation-prose line. It removes the
+label plus common agent-subject wording before placing the prose after
+`Use <skill name> to`. Generated `source.skill_md` paths are recorded relative
+to the current working directory with portable `/` separators, so equivalent
+relative and absolute skill-directory arguments produce the same source value.
+Fixture `skill_name` values must be
 non-empty single-line text without control characters, so rendered Markdown
 metadata cannot create additional document structure.
 
