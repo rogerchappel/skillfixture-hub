@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Extract activation prose following standalone trigger headings, including
+  CRLF input, and record generated `SKILL.md` sources as portable relative paths.
+
 - Add a tag/version-gated npm trusted-publishing workflow with provenance.
 - Retain the smoke-tested package tarball in CI for non-publishing review and document current package availability.
 - Discover compiled tests consistently across supported Node.js versions and verify release checks on Node.js 20 and 24.
