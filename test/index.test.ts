@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import {
   initFixtures,
   renderMarkdownSummary,
@@ -70,6 +70,61 @@ test("initFixtures turns trigger prose into a grammatical primary prompt", async
     const fixtureFile = await initFixtures(skillDirectory, outputPath);
     assert.equal(fixtureFile.fixtures[0].prompt, "Use Example Research Skill to turn a local research brief into source-backed notes.");
     assert.doesNotMatch(fixtureFile.fixtures[0].prompt, /to (?:Use when|When to use|Trigger)/i);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("initFixtures extracts activation prose after trigger headings", async () => {
+  const cases = JSON.parse(readFileSync("fixtures/trigger-extraction.json", "utf8")) as Array<{
+    name: string;
+    markdown: string;
+    expected_prompt: string;
+  }>;
+  const directory = mkdtempSync(join(tmpdir(), "skillfixture-hub-trigger-headings-"));
+
+  try {
+    for (const fixture of cases) {
+      const skillDirectory = join(directory, fixture.name);
+      const outputPath = join(directory, `${fixture.name}.json`);
+      mkdirSync(skillDirectory, { recursive: true });
+      writeFileSync(join(skillDirectory, "SKILL.md"), fixture.markdown);
+
+      const fixtureFile = await initFixtures(skillDirectory, outputPath);
+      assert.equal(fixtureFile.fixtures[0].prompt, fixture.expected_prompt, fixture.name);
+      assert.equal(
+        fixtureFile.fixtures[0].prompt.includes("handle this workflow"),
+        false,
+        fixture.name
+      );
+      assert.equal(
+        validateFixtureFile(fixtureFile).warnings.some((issue) => issue.code === "ambiguous_activation"),
+        false,
+        fixture.name
+      );
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("initFixtures records the same portable source for relative and absolute skill paths", async () => {
+  const directory = mkdtempSync(join(process.cwd(), "tmp-skillfixture-hub-source-"));
+  const skillDirectory = join(directory, "parser-guard");
+  mkdirSync(skillDirectory, { recursive: true });
+  writeFileSync(
+    join(skillDirectory, "SKILL.md"),
+    "# Parser Guard\n\nUse when you need to protect parser changes with regression tests.\n"
+  );
+
+  try {
+    const relativeSkillDirectory = relative(process.cwd(), skillDirectory);
+    const fromRelative = await initFixtures(relativeSkillDirectory, join(directory, "relative.json"));
+    const fromAbsolute = await initFixtures(skillDirectory, join(directory, "absolute.json"));
+
+    assert.equal(fromRelative.source.skill_md, fromAbsolute.source.skill_md);
+    assert.equal(fromAbsolute.source.skill_md, `${relativeSkillDirectory}/SKILL.md`);
+    assert.equal(fromAbsolute.source.skill_md?.startsWith("/"), false);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
