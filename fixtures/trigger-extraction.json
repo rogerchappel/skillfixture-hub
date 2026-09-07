@@ -1,0 +1,17 @@
+[
+  {
+    "name": "when-to-use-heading",
+    "markdown": "# Parser Guard\n\n## When to use\n\nUse this skill when you need to protect parser changes with regression tests.\n",
+    "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."
+  },
+  {
+    "name": "trigger-heading-crlf",
+    "markdown": "# Parser Guard\r\n\r\n## Trigger\r\nUse when an agent needs to protect parser changes with regression tests.\r\n",
+    "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."
+  },
+  {
+    "name": "inline-trigger",
+    "markdown": "# Parser Guard\n\nWhen to use: You need to protect parser changes with regression tests.\n",
+    "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."
+  }
+]
