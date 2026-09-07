@@ -1,5 +1,5 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 export type ExpectedActivation = "activate" | "do_not_activate";
 
@@ -59,7 +59,7 @@ export async function initFixtures(skillDir: string, outPath: string): Promise<A
     schema_version: "1.0",
     skill_name: skillName,
     source: {
-      skill_md: skillMdPath
+      skill_md: portableRelativePath(skillMdPath)
     },
     fixtures: [
       {
@@ -242,16 +242,34 @@ function extractSkillName(skillText: string, fallback: string): string {
 }
 
 function extractTriggerPhrases(skillText: string): string[] {
-  const triggerLine = skillText.split(/\r?\n/).find((line) => /use when|when to use|trigger/i.test(line));
-  if (!triggerLine) return [];
-  const prose = triggerLine
+  const lines = skillText.split(/\r?\n/);
+  for (const [index, line] of lines.entries()) {
+    if (!/use when|when to use|trigger/i.test(line)) continue;
+    const undecorated = line.replace(/^[-*\s#:]*/, "").trim();
+    const headingOnly = /^(?:use when|when to use|triggers?)\s*:?$/i.test(undecorated);
+    const candidate = headingOnly
+      ? lines.slice(index + 1).find((nextLine) => nextLine.trim().length > 0)
+      : line;
+    if (!candidate) continue;
+    const prose = normalizeTriggerProse(candidate);
+    if (prose) return [prose];
+  }
+  return [];
+}
+
+function normalizeTriggerProse(triggerLine: string): string {
+  return triggerLine
     .replace(/^[-*\s#:]*/, "")
     .replace(/^(?:use when|when to use|triggers?)\s*:?[\s-]*/i, "")
+    .replace(/^use\s+this\s+skill\s+when\s+/i, "")
     .replace(/^(?:an?\s+)?agent\s+needs\s+to\s+/i, "")
     .replace(/^you\s+need\s+to\s+/i, "")
     .trim()
     .replace(/[.!?]+$/, "");
-  return prose ? [prose] : [];
+}
+
+function portableRelativePath(path: string): string {
+  return relative(process.cwd(), resolve(path)).split(sep).join("/");
 }
 
 function looksAmbiguous(prompt: string): boolean {
