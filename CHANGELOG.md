@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Skip Markdown headings and fenced blocks following standalone trigger headings so
+  generated prompts use activation prose, falling back to the generic primary prompt
+  when no prose follows.
 - Extract activation prose following standalone trigger headings, including
   CRLF input, and record generated `SKILL.md` sources as portable relative paths.
 

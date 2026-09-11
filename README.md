@@ -66,7 +66,9 @@ clear error directing you to `validate` for field-level details.
 
 `init` recognizes inline trigger lines beginning with `Use when`, `When to use`,
 or `Trigger`. Those labels may also be Markdown headings on their own line; in
-that form, `init` uses the next non-empty activation-prose line. It removes the
+that form, `init` skips subsequent Markdown headings and fenced blocks and uses
+the first activation-prose line after the heading, falling back to the generic
+primary prompt when no prose follows. It removes the
 label plus common agent-subject wording before placing the prose after
 `Use <skill name> to`. Generated `source.skill_md` paths are recorded relative
 to the current working directory with portable `/` separators, so equivalent
