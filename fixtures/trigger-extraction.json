@@ -10,6 +10,16 @@
     "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."
   },
   {
+    "name": "when-to-use-heading-followed-by-heading",
+    "markdown": "# Parser Guard\n\n## When to use\n\n## Examples\n\nUse this skill when you need to protect parser changes with regression tests.\n",
+    "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."
+  },
+  {
+    "name": "when-to-use-heading-followed-by-fence",
+    "markdown": "# Parser Guard\n\n## When to use\n\n```text\nProtect parser changes with regression tests.\n```\n\nUse this skill when you need to protect parser changes with regression tests.\n",
+    "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."
+  },
+  {
     "name": "inline-trigger",
     "markdown": "# Parser Guard\n\nWhen to use: You need to protect parser changes with regression tests.\n",
     "expected_prompt": "Use Parser Guard to protect parser changes with regression tests."

@@ -108,6 +108,39 @@ test("initFixtures extracts activation prose after trigger headings", async () =
   }
 });
 
+test("initFixtures skips headings and fences after trigger headings", async () => {
+  const cases = JSON.parse(readFileSync("fixtures/trigger-extraction.json", "utf8")) as Array<{
+    name: string;
+    markdown: string;
+    expected_prompt: string;
+  }>;
+  const regressionCases = cases.filter((fixture) =>
+    [
+      "when-to-use-heading-followed-by-heading",
+      "when-to-use-heading-followed-by-fence"
+    ].includes(fixture.name)
+  );
+  assert.equal(regressionCases.length, 2);
+
+  const directory = mkdtempSync(join(tmpdir(), "skillfixture-hub-trigger-skips-"));
+
+  try {
+    for (const fixture of regressionCases) {
+      const skillDirectory = join(directory, fixture.name);
+      const outputPath = join(directory, `${fixture.name}.json`);
+      mkdirSync(skillDirectory, { recursive: true });
+      writeFileSync(join(skillDirectory, "SKILL.md"), fixture.markdown);
+
+      const fixtureFile = await initFixtures(skillDirectory, outputPath);
+      assert.equal(fixtureFile.fixtures[0].prompt, fixture.expected_prompt, fixture.name);
+      assert.doesNotMatch(fixtureFile.fixtures[0].prompt, /(?:^|\s)(?:#{1,6}\s|`{3,})/);
+      assert.doesNotMatch(fixtureFile.fixtures[0].prompt, /Examples/);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("initFixtures records the same portable source for relative and absolute skill paths", async () => {
   const directory = mkdtempSync(join(process.cwd(), "tmp-skillfixture-hub-source-"));
   const skillDirectory = join(directory, "parser-guard");
