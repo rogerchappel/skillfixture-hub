@@ -248,13 +248,39 @@ function extractTriggerPhrases(skillText: string): string[] {
     const undecorated = line.replace(/^[-*\s#:]*/, "").trim();
     const headingOnly = /^(?:use when|when to use|triggers?)\s*:?$/i.test(undecorated);
     const candidate = headingOnly
-      ? lines.slice(index + 1).find((nextLine) => nextLine.trim().length > 0)
+      ? findProseAfterHeading(lines, index + 1)
       : line;
     if (!candidate) continue;
     const prose = normalizeTriggerProse(candidate);
     if (prose) return [prose];
   }
   return [];
+}
+
+function findProseAfterHeading(lines: string[], start: number): string | undefined {
+  for (let index = start; index < lines.length; index += 1) {
+    const line = lines[index];
+    const fence = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fence) {
+      index = skipFencedBlock(lines, index, fence[1]);
+      continue;
+    }
+    if (/^\s*#{1,6}\s/.test(line)) continue;
+    if (line.trim().length > 0) return line;
+  }
+  return undefined;
+}
+
+function skipFencedBlock(lines: string[], openIndex: number, openingFence: string): number {
+  const fenceCharacter = openingFence[0];
+  const fenceLength = openingFence.length;
+  for (let index = openIndex + 1; index < lines.length; index += 1) {
+    const closingFence = lines[index].match(/^\s*(`{3,}|~{3,})/)?.[1];
+    if (closingFence && closingFence[0] === fenceCharacter && closingFence.length >= fenceLength) {
+      return index;
+    }
+  }
+  return lines.length;
 }
 
 function normalizeTriggerProse(triggerLine: string): string {
